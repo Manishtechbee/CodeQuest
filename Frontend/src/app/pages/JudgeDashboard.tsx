@@ -1,16 +1,48 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Navbar } from '../components/Navbar';
 import { Sidebar } from '../components/Sidebar';
 import { GlassCard } from '../components/GlassCard';
 import { Trophy, Users, CheckCircle2, Clock } from 'lucide-react';
+import axios from 'axios';
 
 export function JudgeDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  
+
+  const recentEvaluations = [
+    { team: 'Code Ninjas', project: 'AI Assistant', score: 8.5, status: 'completed' },
+    { team: 'Tech Titans', project: 'Smart Home Hub', score: 7.2, status: 'completed' },
+    { team: 'Data Wizards', project: 'ML Dashboard', score: 9.1, status: 'completed' },
+    { team: 'Dev Squad', project: 'Social Platform', score: 6.8, status: 'completed' },
+  ];
+
+   const [totalTeams, setTotalTeams] = useState<number>(0);
+  const token = localStorage.getItem("token");
+  const config = { headers: { Authorization: `Bearer ${token}` } };
+
+ useEffect(() => {
+  const fetchCount = async () => {
+    try {
+      const res = await axios.get(
+        "http://localhost:5000/api/team/count", // backend port
+        config // pass auth headers
+      );
+      console.log("Teams count response:", res.data);
+      setTotalTeams(res.data.totalTeams);
+    } catch (err) {
+      console.error("Error fetching teams count:", err);
+    }
+  };
+
+  fetchCount();
+}, []);
+
+
   const stats = [
     {
       label: 'Total Teams',
-      value: '48',
+      value: totalTeams,
       icon: Users,
       color: 'from-blue-500 to-cyan-500',
     },
@@ -33,14 +65,6 @@ export function JudgeDashboard() {
       color: 'from-purple-500 to-pink-500',
     },
   ];
-
-  const recentEvaluations = [
-    { team: 'Code Ninjas', project: 'AI Assistant', score: 8.5, status: 'completed' },
-    { team: 'Tech Titans', project: 'Smart Home Hub', score: 7.2, status: 'completed' },
-    { team: 'Data Wizards', project: 'ML Dashboard', score: 9.1, status: 'completed' },
-    { team: 'Dev Squad', project: 'Social Platform', score: 6.8, status: 'completed' },
-  ];
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50 dark:from-gray-950 dark:via-gray-900 dark:to-purple-950">
       <Navbar onMenuClick={() => setSidebarOpen(true)} showMenu />

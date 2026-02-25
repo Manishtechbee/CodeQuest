@@ -19,7 +19,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const teamLinks = [
     { to: '/team', icon: Home, label: 'Dashboard' },
     { to: '/team/project', icon: Users, label: 'My Project' },
-    { to: '/quiz', icon: Brain, label: 'Quiz' },
+    
     { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
   ];
 

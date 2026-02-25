@@ -16,7 +16,7 @@ export function Landing() {
 
   const timeline = [
     { time: '09:00 AM', event: 'Registration & Opening Ceremony', icon: Users },
-    { time: '10:00 AM', event: 'Hackathon Begins', icon: Code },
+    { time: '09:30 AM', event: 'Hackathon Begins', icon: Code },
     { time: '02:00 PM', event: 'Lunch Break', icon: Clock },
     { time: '02:30 PM', event: 'Project Submission Deadline', icon: Zap },
     { time: '02:45 PM', event: 'Presentations & Judging', icon: Trophy },

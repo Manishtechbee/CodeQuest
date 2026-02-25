@@ -1,27 +1,145 @@
-import { useState } from 'react';
-import { Navbar } from '../components/Navbar';
-import { Sidebar } from '../components/Sidebar';
-import { GlassCard } from '../components/GlassCard';
-import { Button } from '../components/Button';
-import { Input } from '../components/Input';
-import { Upload, FileText, Link as LinkIcon, Save } from 'lucide-react';
+import { useState, useEffect, ChangeEvent } from "react";
+import axios from "axios";
+import { Navbar } from "../components/Navbar";
+import { Sidebar } from "../components/Sidebar";
+import { GlassCard } from "../components/GlassCard";
+import { Button } from "../components/Button";
+import { Input } from "../components/Input";
+import { Upload, FileText, Save } from "lucide-react";
 
-export function TeamProject() {
+type StatusType = {
+  info: boolean;
+  presentation: boolean;
+};
+
+type Project = {
+  title: string;
+  description: string;
+  githubUrl: string;
+  demoUrl: string;
+  presentation?: string;
+};
+
+type TeamProjectProps = {
+  teamId: string;
+};
+
+export function TeamProject({ teamId }: TeamProjectProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [projectTitle, setProjectTitle] = useState('AI Assistant for Developers');
-  const [description, setDescription] = useState('An intelligent coding assistant that helps developers write better code faster using advanced AI models and natural language processing.');
-  const [githubUrl, setGithubUrl] = useState('');
-  const [demoUrl, setDemoUrl] = useState('');
 
-  const handleSave = () => {
-    alert('Project details saved successfully!');
+  // Project fields
+  const [projectTitle, setProjectTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [githubUrl, setGithubUrl] = useState("");
+  const [demoUrl, setDemoUrl] = useState("");
+
+  // File uploads
+  const [presentationFile, setPresentationFile] = useState<File | null>(null);
+
+  const [status, setStatus] = useState<StatusType>({
+    info: false,
+    presentation: false,
+  });
+
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
+
+  const token = localStorage.getItem("token");
+  const config = { headers: { Authorization: `Bearer ${token}` } };
+
+  // Load existing project data
+  useEffect(() => {
+    const fetchProject = async () => {
+      try {
+        const res = await axios.get(
+          `http://localhost:5000/api/projects/team/${teamId}`,
+          config
+        );
+        const project: Project = res.data;
+        setProjectTitle(project.title);
+        setDescription(project.description);
+        setGithubUrl(project.githubUrl);
+        setDemoUrl(project.demoUrl);
+        setStatus((prev) => ({
+          ...prev,
+          info: true,
+          presentation: !!project.presentation,
+        }));
+      } catch (err: any) {
+        console.error(err);
+        setMessage("Failed to load project data");
+      }
+    };
+
+    fetchProject();
+  }, [teamId]);
+
+  // Save project info to DB
+  const handleSave = async () => {
+    setLoading(true);
+    try {
+      await axios.post(
+        `http://localhost:5000/api/projects`,
+        {
+          teamId,
+          title: projectTitle,
+          description,
+          githubUrl,
+          demoUrl,
+        },
+        config
+      );
+      setStatus((prev) => ({ ...prev, info: true }));
+      setMessage("Project details saved successfully!");
+    } catch (err: any) {
+      console.error(err);
+      setMessage(err.response?.data?.msg || "Failed to save project details");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Upload files
+  const handleFileUpload = async (
+    e: ChangeEvent<HTMLInputElement>,
+    type: "presentation" 
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("teamId", teamId);
+    formData.append("type", type);
+
+    try {
+      await axios.post(
+        `http://localhost:5000/api/projects/upload`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      setStatus((prev) => ({ ...prev, [type]: true }));
+
+      if (type === "presentation") setPresentationFile(file);
+      
+      setMessage(`${type} uploaded successfully!`);
+    } catch (err: any) {
+      console.error(err);
+      setMessage(err.response?.data?.msg || `Failed to upload ${type}`);
+    }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50 dark:from-gray-950 dark:via-gray-900 dark:to-purple-950">
       <Navbar onMenuClick={() => setSidebarOpen(true)} showMenu />
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      
+
       <main className="lg:ml-64 pt-16">
         <div className="p-6 md:p-8 max-w-4xl">
           <div className="mb-8">
@@ -44,7 +162,9 @@ export function TeamProject() {
                 />
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">Description</label>
+                  <label className="block text-sm font-medium mb-2">
+                    Description
+                  </label>
                   <textarea
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
@@ -69,14 +189,8 @@ export function TeamProject() {
                   type="url"
                 />
 
-                <Button variant="gradient" onClick={handleSave}>
-                  <Save className="w-4 h-4 mr-2" />
-                  Save Changes
-                </Button>
-              </div>
-            </GlassCard>
 
-            {/* File Uploads */}
+{/* File Uploads */}
             <GlassCard className="p-6">
               <h2 className="text-2xl font-bold mb-6">File Uploads</h2>
               <div className="space-y-4">
@@ -86,65 +200,31 @@ export function TeamProject() {
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
                     PPT, PDF, or Google Slides link (Max 50MB)
                   </p>
-                  <Button variant="secondary">
-                    Choose File
-                  </Button>
+                  <input
+                    type="file"
+                    accept=".ppt,.pptx,.pdf"
+                    onChange={(e) => handleFileUpload(e, "presentation")}
+                    className="hidden"
+                    id="presentation-file"
+                  />
+                  <label htmlFor="presentation-file">
+                    <Button variant="secondary">Choose File</Button>
+                  </label>
                 </div>
 
-                <div className="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg p-8 text-center hover:border-purple-500 dark:hover:border-purple-500 transition-colors cursor-pointer">
-                  <FileText className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                  <h3 className="font-semibold mb-2">Upload Documentation</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                    PDF, MD, or TXT files
-                  </p>
-                  <Button variant="secondary">
-                    Choose File
-                  </Button>
-                </div>
+                
+              </div>
+            </GlassCard>
+                <Button variant="gradient" onClick={handleSave} disabled={loading}>
+                  <Save className="w-4 h-4 mr-2" />
+                  {loading ? "Saving..." : "Save Changes"}
+                </Button>
               </div>
             </GlassCard>
 
-            {/* Submission Status */}
-            <GlassCard className="p-6">
-              <h2 className="text-2xl font-bold mb-6">Submission Status</h2>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 rounded-lg bg-white/50 dark:bg-gray-800/50">
-                  <div>
-                    <div className="font-semibold">Project Information</div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">Complete</div>
-                  </div>
-                  <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
-                    <span className="text-white text-xl">✓</span>
-                  </div>
-                </div>
+            
 
-                <div className="flex items-center justify-between p-4 rounded-lg bg-white/50 dark:bg-gray-800/50">
-                  <div>
-                    <div className="font-semibold">Presentation Upload</div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">Pending</div>
-                  </div>
-                  <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center">
-                    <span className="text-white text-xl">!</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between p-4 rounded-lg bg-white/50 dark:bg-gray-800/50">
-                  <div>
-                    <div className="font-semibold">Documentation</div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">Pending</div>
-                  </div>
-                  <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center">
-                    <span className="text-white text-xl">!</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-6 p-4 rounded-lg bg-orange-100 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-800">
-                <p className="text-sm text-orange-800 dark:text-orange-300">
-                  <strong>Reminder:</strong> Please upload all required files before 6:00 PM to complete your submission.
-                </p>
-              </div>
-            </GlassCard>
+           
           </div>
         </div>
       </main>

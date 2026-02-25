@@ -8,6 +8,7 @@ import { TeamProject } from './pages/TeamProject';
 import { Leaderboard } from './pages/Leaderboard';
 import { Quiz } from './pages/Quiz';
 import { NotFound } from './pages/NotFound';
+import { GoogleSuccess } from './pages/GoogleSuccess';
 
 export const router = createBrowserRouter([
   {
@@ -39,6 +40,10 @@ export const router = createBrowserRouter([
     Component: Leaderboard,
   },
   {
+    path: "/google-success",
+    Component: GoogleSuccess, 
+  },
+  {
     path: '/quiz',
     Component: Quiz,
   },
@@ -46,4 +51,5 @@ export const router = createBrowserRouter([
     path: '*',
     Component: NotFound,
   },
+  
 ]);

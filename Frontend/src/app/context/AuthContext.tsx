@@ -24,18 +24,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return saved ? JSON.parse(saved) : null;
   });
 
-  const login = async (email: string, password: string, role: UserRole) => {
-    // Mock login - in production, this would call an API
-    const mockUser: User = {
-      id: Math.random().toString(36).substr(2, 9),
-      email,
-      role,
-      name: email.split('@')[0],
-      teamId: role !== 'judge' ? 'team-1' : undefined,
-    };
-    setUser(mockUser);
-    localStorage.setItem('user', JSON.stringify(mockUser));
-  };
+  const login = async (
+  email: string,
+  password: string,
+  role: UserRole
+) => {
+
+  console.log("LOGIN PAYLOAD:", {email,
+  password,
+  role});
+
+  const res = await fetch(
+    "http://localhost:5000/api/auth/login",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password, role }),
+    }
+  );
+
+  const data = await res.json();
+
+  if (!res.ok) throw new Error(data.msg);
+
+  localStorage.setItem("token", data.token);
+  localStorage.setItem("user", JSON.stringify(data.user));
+
+  setUser(data.user);
+};
 
   const logout = () => {
     setUser(null);

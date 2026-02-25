@@ -1,19 +1,20 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Navbar } from '../components/Navbar';
 import { Sidebar } from '../components/Sidebar';
 import { GlassCard } from '../components/GlassCard';
 import { Button } from '../components/Button';
 import { ScoreSlider } from '../components/ScoreSlider';
 import { FileText, Users, ExternalLink } from 'lucide-react';
+import axios from 'axios';
 
 interface Team {
-  id: string;
+  _id: string;
   name: string;
-  members: string[];
-  project: string;
-  description: string;
-  pptUrl: string;
-  status: 'pending' | 'evaluated';
+  members: { user: { name: string; email: string } }[];
+  project?: string;
+  description?: string;
+  pptUrl?: string;
+  status?: 'pending' | 'evaluated';
 }
 
 export function JudgeEvaluate() {
@@ -27,8 +28,31 @@ export function JudgeEvaluate() {
   });
   const [comments, setComments] = useState('');
   const [suggestion, setSuggestion] = useState('');
+  
+  const [teams, setTeams] = useState<Team[]>([]);
+  const token = localStorage.getItem("token");
 
-  const teams: Team[] = [
+  // Fetch teams from backend
+  useEffect(() => {
+    const fetchTeams = async () => {
+      try {
+        const res = await axios.get("http://localhost:5000/api/team", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setTeams(res.data); // Set teams from DB
+        console.log(res.data); // debug
+      } catch (err) {
+        console.error("Failed to fetch teams:", err);
+      }
+    };
+
+    fetchTeams();
+  }, [token]);
+
+  /**
+   * 
+   * 
+   * const teams: Team[] = [
     {
       id: '1',
       name: 'Code Ninjas',
@@ -57,6 +81,9 @@ export function JudgeEvaluate() {
       status: 'evaluated',
     },
   ];
+
+   */
+  
 
   const handleSubmit = () => {
     if (!selectedTeam) return;
@@ -92,26 +119,26 @@ export function JudgeEvaluate() {
                 <h2 className="text-xl font-bold mb-4">Teams</h2>
                 <div className="space-y-3">
                   {teams.map((team) => (
-                    <button
-                      key={team.id}
-                      onClick={() => setSelectedTeam(team)}
-                      className={`w-full text-left p-4 rounded-lg transition-all ${
-                        selectedTeam?.id === team.id
-                          ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
-                          : 'bg-white/50 dark:bg-gray-800/50 hover:bg-white/80 dark:hover:bg-gray-800/80'
-                      }`}
-                    >
-                      <div className="font-semibold mb-1">{team.name}</div>
-                      <div className={`text-sm ${selectedTeam?.id === team.id ? 'text-white/80' : 'text-gray-600 dark:text-gray-400'}`}>
-                        {team.members.length} members
-                      </div>
-                      {team.status === 'evaluated' && (
-                        <div className="mt-2 inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-green-500/20 text-green-600 dark:text-green-400">
-                          ✓ Evaluated
-                        </div>
-                      )}
-                    </button>
-                  ))}
+  <button
+    key={team._id}
+    onClick={() => setSelectedTeam(team)}
+    className={`w-full text-left p-4 rounded-lg transition-all ${
+      selectedTeam?._id === team._id
+        ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
+        : 'bg-white/50 dark:bg-gray-800/50 hover:bg-white/80 dark:hover:bg-gray-800/80'
+    }`}
+  >
+    <div className="font-semibold mb-1">{team.name}</div>
+    <div className={`text-sm ${selectedTeam?._id === team._id ? 'text-white/80' : 'text-gray-600 dark:text-gray-400'}`}>
+      {team.members.length} members
+    </div>
+    {team.status === 'evaluated' && (
+      <div className="mt-2 inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-green-500/20 text-green-600 dark:text-green-400">
+        ✓ Evaluated
+      </div>
+    )}
+  </button>
+))}
                 </div>
               </GlassCard>
             </div>
@@ -130,15 +157,15 @@ export function JudgeEvaluate() {
                           Team Members
                         </div>
                         <div className="flex flex-wrap gap-2">
-                          {selectedTeam.members.map((member, index) => (
-                            <span
-                              key={index}
-                              className="px-3 py-1 rounded-full bg-purple-100 dark:bg-purple-900/30 text-sm"
-                            >
-                              {member}
-                            </span>
-                          ))}
-                        </div>
+  {selectedTeam.members.map((member, index) => (
+    <span
+      key={index}
+      className="px-3 py-1 rounded-full bg-purple-100 dark:bg-purple-900/30 text-sm"
+    >
+      {member.user.name}
+    </span>
+  ))}
+</div>
                       </div>
 
                       <div>
